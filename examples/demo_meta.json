@@ -1,0 +1,11 @@
+{
+  "scene": "メタバース大学の夕暮れ、窓際で思索するAI研究者",
+  "prompt": "prompt: AI researcher deep in thought by the window, dusk at metaverse university, soft warm lighting, serene atmosphere, semi-realistic anime style, quiet intellectual tone, cinematic, futuristic cityscape",
+  "motion": "The AI researcher leans thoughtfully by the window as gentle breeze moves her hair, camera slowly pushing in",
+  "steps": 20,
+  "fps": 16,
+  "duration": 3,
+  "i2v_model": "Wan2.2-I2V-A14B-HighNoise-Q5_K_M.gguf",
+  "vae": "wan_2.1_vae.safetensors",
+  "notes": "Lightning LoRA removed (fp16 incompatible with GGUF Q5); WAN 2.1 VAE used"
+}

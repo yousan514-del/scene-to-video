@@ -317,7 +317,7 @@ def run(scene: str, steps: int = 20, fps: int = 16,
     pid_i2v = api_post("/prompt", {"prompt": wf_i2v})["prompt_id"]
     print(f"  Queue: {pid_i2v[:8]}...")
 
-    ok = wait_done(pid_i2v, timeout=600)
+    ok = wait_done(pid_i2v, timeout=900)
     if not ok:
         raise TimeoutError("I2V 生成タイムアウト")
 
