@@ -33,7 +33,7 @@ COMFYUI_INPUT = Path("D:/ComfyUI/input")
 COMFYUI_OUT   = Path("D:/ComfyUI/output")
 OUTPUT_DIR    = Path(__file__).parent / "output"
 OLLAMA_URL    = "http://127.0.0.1:11434"
-QWEN_MODEL    = "qwen2.5-vl:7b"
+QWEN_MODEL    = "qwen2.5vl:7b"
 
 # t2i モデル設定
 T2I_CHECKPOINT = "waiIllustriousSDXL_v160.safetensors"
@@ -48,9 +48,9 @@ T2I_LORAS = [
 I2V_UNET      = "Wan2.2-I2V-A14B-HighNoise-Q5_K_M.gguf"
 I2V_CLIP      = "umt5-xxl-encoder-Q5_K_M.gguf"
 I2V_CLIP_VIS  = "wan21NSFWClipVisionH_v10.safetensors"
-I2V_VAE       = "wan2.2_vae.safetensors"
-I2V_LORA_LIGHT= "Wan2.2-Lightning_I2V-A14B-4steps-lora_HIGH_fp16.safetensors"
-I2V_LORA_SMTH = "smoothxxxanimation.j6bQ.safetensors"
+I2V_VAE       = "wan_2.1_vae.safetensors"   # GGUF is WAN2.1 arch (36-ch patch_embed)
+# Lightning LoRA (fp16) is incompatible with GGUF Q5: wrong patch_embedding channels
+# I2V_LORA_LIGHT = disabled
 
 T2I_QUALITY_SUFFIX = (
     "masterpiece, best quality, ultra detailed, cinematic lighting, "
@@ -220,7 +220,11 @@ def build_t2i_workflow(positive: str, seed: int) -> dict:
 
 def build_i2v_workflow(image_name: str, steps: int, fps: int,
                        duration: int, seed: int) -> dict:
-    """WAN 2.2 Lightning I2V ワークフロー"""
+    """WAN 2.1 GGUF I2V ワークフロー (20-step, LoRA なし)
+
+    Note: Lightning LoRA fp16 は GGUF Q5_K_M と patch_embedding チャネル数不一致のため除外。
+          WAN 2.2 VAE (48-ch) の代わりに WAN 2.1 VAE (16-ch) を使用。
+    """
     import random
     if seed < 0:
         seed = random.randint(0, 2**32 - 1)
@@ -229,11 +233,7 @@ def build_i2v_workflow(image_name: str, steps: int, fps: int,
 
     return {
         "10": {"class_type": "UnetLoaderGGUF",  "inputs": {"unet_name": I2V_UNET}},
-        "11": {"class_type": "LoraLoaderModelOnly", "inputs": {
-            "lora_name": I2V_LORA_LIGHT, "strength_model": 1.0, "model": ["10", 0]}},
-        "12": {"class_type": "LoraLoaderModelOnly", "inputs": {
-            "lora_name": I2V_LORA_SMTH, "strength_model": 0.25, "model": ["11", 0]}},
-        "13": {"class_type": "ModelSamplingSD3", "inputs": {"shift": 8.0, "model": ["12", 0]}},
+        "13": {"class_type": "ModelSamplingSD3", "inputs": {"shift": 5.0, "model": ["10", 0]}},
         "20": {"class_type": "CLIPLoaderGGUF",  "inputs": {"clip_name": I2V_CLIP, "type": "wan"}},
         "21": {"class_type": "VAELoader",        "inputs": {"vae_name": I2V_VAE}},
         "22": {"class_type": "CLIPVisionLoader", "inputs": {"clip_name": I2V_CLIP_VIS}},
@@ -266,7 +266,7 @@ def build_i2v_workflow(image_name: str, steps: int, fps: int,
 
 
 # ─── メイン ────────────────────────────────────────────────────────────────────
-def run(scene: str, steps: int = 4, fps: int = 16,
+def run(scene: str, steps: int = 20, fps: int = 16,
         duration: int = 3, seed: int = -1) -> Path:
     """シーン説明 → 静止画 → 動画 の全パイプライン"""
     import random
@@ -346,7 +346,7 @@ def main():
         epilog="\n例:\n  py -3 scene_to_video.py \"メタバース大学の夕暮れ、窓際の研究者\""
     )
     parser.add_argument("scene", nargs="?", help="日本語シーン説明")
-    parser.add_argument("--steps",    type=int, default=4,  help="I2V ステップ数（default: 4）")
+    parser.add_argument("--steps",    type=int, default=20, help="I2V ステップ数（default: 20）")
     parser.add_argument("--fps",      type=int, default=16, help="FPS（default: 16）")
     parser.add_argument("--duration", type=int, default=3,  help="動画秒数（default: 3）")
     parser.add_argument("--seed",     type=int, default=-1, help="乱数シード（default: random）")
